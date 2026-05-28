@@ -1,0 +1,190 @@
+﻿<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#0a0c0f" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="PyMIB Attendance" />
+  <meta name="description" content="Sistema de asistencia industrial para PyMIB" />
+  <title>PyMIB Attendance</title>
+  <link rel="manifest" href="manifest-worker.json" />
+  <link rel="apple-touch-icon" href="icons/icon-192.png" />
+  <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png" />
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Share+Tech+Mono&family=Exo+2:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+</head>
+<body>
+
+  <!-- SPLASH -->
+  <div id="splash" class="splash">
+    <div class="splash-bg"></div>
+    <div class="splash-content">
+      <div class="splash-logo">
+        <img src="data:image/png;base64,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" alt="PyMIB" class="logo-main" />
+      </div>
+      <div class="splash-brand">
+        <span class="brand-py">Py</span><span class="brand-mib">MIB</span>
+      </div>
+      <div class="splash-sub">ATTENDANCE SYSTEM</div>
+      <div class="splash-bar"><div class="splash-progress"></div></div>
+    </div>
+  </div>
+
+  <!-- MAIN APP -->
+  <div id="app" class="app hidden">
+
+    <!-- Header -->
+    <header class="app-header">
+      <div class="header-logo">
+        <img src="data:image/png;base64,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" alt="PyMIB" class="header-logo-img" />
+      </div>
+      <div class="header-status">
+        <span id="sync-indicator" class="sync-dot offline"></span>
+        <span id="sync-label" class="sync-label">OFFLINE</span>
+      </div>
+    </header>
+
+    <!-- Role Selector -->
+    <section id="role-selector" class="role-selector">
+      <div class="role-title">
+        <span class="role-title-line"></span>
+        SELECCIONA TU ROL
+        <span class="role-title-line"></span>
+      </div>
+      <div class="role-cards">
+        <button class="role-card" onclick="selectRole('supervisor')">
+          <div class="role-icon">ðŸ‘·</div>
+          <div class="role-name">SUPERVISOR</div>
+          <div class="role-desc">Generar QR de asistencia</div>
+          <div class="role-arrow">â†’</div>
+        </button>
+        <button class="role-card" onclick="selectRole('worker')">
+          <div class="role-icon">ðŸ”§</div>
+          <div class="role-name">TRABAJADOR</div>
+          <div class="role-desc">Registrar asistencia</div>
+          <div class="role-arrow">â†’</div>
+        </button>
+      </div>
+      <button class="btn-records" onclick="showRecords()">ðŸ“‹ Ver Registros</button>
+    </section>
+
+    <!-- SUPERVISOR VIEW -->
+    <section id="supervisor-view" class="view hidden">
+      <div class="view-header">
+        <button class="btn-back" onclick="goBack()">â† VOLVER</button>
+        <h2>SUPERVISOR</h2>
+      </div>
+      <div class="card">
+        <div class="card-label">CONFIGURAR SESIÃ“N</div>
+        <div class="form-group">
+          <label class="field-label">NOMBRE DEL SUPERVISOR</label>
+          <input type="text" id="sup-name" class="field-input" placeholder="Ej: Juan Bahena" autocomplete="off" />
+        </div>
+        <div class="form-group">
+          <label class="field-label">PROYECTO / OBRA</label>
+          <input type="text" id="sup-project" class="field-input" placeholder="Ej: Planta PEMEX - RefinerÃ­a" autocomplete="off" />
+        </div>
+        <button class="btn-primary" onclick="generateQR()">
+          <span class="btn-icon">âš¡</span> GENERAR QR
+        </button>
+      </div>
+
+      <div id="qr-container" class="card hidden">
+        <div class="card-label">QR ACTIVO</div>
+        <div class="qr-meta" id="qr-meta"></div>
+        <div class="qr-wrapper">
+          <div id="qr-canvas-wrap"></div>
+          <div class="qr-frame"></div>
+        </div>
+        <div class="qr-timer-wrap">
+          <div class="timer-label">EXPIRA EN</div>
+          <div id="qr-timer" class="qr-timer">5:00</div>
+          <div class="timer-bar-bg">
+            <div id="timer-bar" class="timer-bar"></div>
+          </div>
+        </div>
+        <button class="btn-secondary" onclick="generateQR()">ðŸ”„ REGENERAR QR</button>
+      </div>
+    </section>
+
+    <!-- WORKER VIEW -->
+    <section id="worker-view" class="view hidden">
+      <div class="view-header">
+        <button class="btn-back" onclick="goBack()">â† VOLVER</button>
+        <h2>TRABAJADOR</h2>
+      </div>
+
+      <div id="step-scan" class="step-card">
+        <div class="step-number">01</div>
+        <div class="card-label">ESCANEAR QR</div>
+        <div class="camera-start">
+          <button id="btn-start-camera" class="btn-primary" onclick="userStartScanner()">
+            <span class="btn-icon">📷</span> ACTIVAR CAMARA
+          </button>
+          <button id="btn-photo-qr" class="btn-secondary" onclick="openQRPhotoPicker()">
+            TOMAR FOTO DEL QR
+          </button>
+          <input id="qr-photo-input" class="hidden" type="file" accept="image/*" capture="environment" onchange="scanQRPhoto(this)" />
+        </div>
+        <div id="qr-reader"></div>
+        <div id="scan-status" class="scan-status">Toca el boton para activar la camara</div>
+        <div id="scanned-info" class="scanned-info hidden"></div>
+      </div>
+
+      <div id="step-name" class="step-card hidden">
+        <div class="step-number">02</div>
+        <div class="card-label">TU NOMBRE</div>
+        <div id="qr-info-display" class="qr-info-display"></div>
+        <div class="form-group">
+          <label class="field-label">NOMBRE COMPLETO</label>
+          <input type="text" id="worker-name" class="field-input" placeholder="Ej: Carlos MartÃ­nez" autocomplete="off" />
+        </div>
+        <button class="btn-primary" onclick="registerAttendance()">
+          <span class="btn-icon">ðŸ“</span> REGISTRAR ASISTENCIA
+        </button>
+        <button class="btn-ghost" onclick="resetScan()">â† Escanear de nuevo</button>
+      </div>
+
+      <div id="step-confirm" class="step-card hidden">
+        <div class="confirm-icon" id="confirm-icon">âœ…</div>
+        <div class="card-label" id="confirm-type-label">ENTRADA REGISTRADA</div>
+        <div id="confirm-details" class="confirm-details"></div>
+        <button class="btn-primary" onclick="resetWorker()">NUEVO REGISTRO</button>
+      </div>
+    </section>
+
+    <!-- RECORDS VIEW -->
+    <section id="records-view" class="view hidden">
+      <div class="view-header">
+        <button class="btn-back" onclick="goBack()">â† VOLVER</button>
+        <h2>REGISTROS</h2>
+      </div>
+      <div class="records-toolbar">
+        <span id="records-count" class="records-count">0 registros</span>
+        <button class="btn-sync-now" onclick="syncNow()">âš¡ SINCRONIZAR</button>
+      </div>
+      <div id="records-list" class="records-list">
+        <div class="empty-state">No hay registros aÃºn</div>
+      </div>
+    </section>
+
+  </div>
+
+  <div id="toast-container"></div>
+
+  <!-- QR generation bundle -->
+  <!-- QR scanner -->
+  <script src="vendor/html5-qrcode.min.js"></script>
+
+  <script src="db.js"></script>
+  <script src="sync.js"></script>
+  <script src="qr-bundle.js"></script>
+  <script src="scanner.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
+

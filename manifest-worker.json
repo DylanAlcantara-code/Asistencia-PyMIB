@@ -1,0 +1,36 @@
+{
+  "id": "./worker.html",
+  "name": "PyMIB Trabajador",
+  "short_name": "Trabajador",
+  "description": "Registro de asistencia para trabajadores PyMIB",
+  "start_url": "./worker.html?worker=1",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0a0c0f",
+  "theme_color": "#0a0c0f",
+  "lang": "es",
+  "scope": "./",
+  "icons": [
+    {
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["productivity", "utilities"],
+  "shortcuts": [
+    {
+      "name": "Registrar asistencia",
+      "short_name": "Registrar",
+      "description": "Abrir escaner de QR",
+      "url": "./worker.html?worker=1"
+    }
+  ]
+}

@@ -733,7 +733,8 @@ html, body {
    RECORDS VIEW
 ══════════════════════════════════════ */
 .records-toolbar {
-  display: flex; align-items: center; justify-content: space-between;
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  flex-wrap: wrap;
   margin-bottom: 16px;
 }
 
@@ -742,6 +743,13 @@ html, body {
   font-size: 11px;
   color: var(--text-dim);
   letter-spacing: 2px;
+}
+
+.records-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
 }
 
 .btn-sync-now {

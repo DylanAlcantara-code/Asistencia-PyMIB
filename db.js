@@ -150,3 +150,30 @@ async function countPending() {
   const pending = await getPendingRecords();
   return pending.length;
 }
+
+/**
+ * Mark every local record as pending so it can be sent again.
+ * The Apps Script backend ignores duplicates.
+ */
+async function markAllAsPending() {
+  await initDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE_NAME, 'readwrite');
+    const store = tx.objectStore(STORE_NAME);
+    const req = store.getAll();
+
+    req.onsuccess = () => {
+      const records = req.result || [];
+      records.forEach(record => {
+        record.sincronizado = false;
+        delete record.synced_at;
+        store.put(record);
+      });
+    };
+
+    req.onerror = () => reject(req.error);
+    tx.oncomplete = () => resolve(true);
+    tx.onerror = () => reject(tx.error);
+    tx.onabort = () => reject(tx.error);
+  });
+}

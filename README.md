@@ -96,6 +96,13 @@ GitHub Pages sirve HTTPS automáticamente ✓
 7. Autoriza los permisos (acepta todas las solicitudes)
 8. **Copia la URL** que termina en `/exec`
 
+> Importante: si ya tenias una implementacion anterior del Apps Script, pega el
+> nuevo contenido de `apps-script.gs` y crea una nueva version/despliegue antes
+> de probar la sincronizacion. Esta version devuelve confirmacion real al
+> navegador y evita duplicados usando la columna `ID Local`.
+> Si ya tenias registros locales que aparecian como sincronizados pero no se
+> veian en la hoja, abre **Ver Registros** y usa **REENVIAR TODO**.
+
 ### Paso 4: Configurar la URL en sync.js
 
 Abre `sync.js` y reemplaza:

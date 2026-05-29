@@ -165,7 +165,10 @@
       </div>
       <div class="records-toolbar">
         <span id="records-count" class="records-count">0 registros</span>
-        <button class="btn-sync-now" onclick="syncNow()">âš¡ SINCRONIZAR</button>
+        <div class="records-actions">
+          <button class="btn-sync-now" onclick="syncNow()">âš¡ SINCRONIZAR</button>
+          <button class="btn-sync-now" onclick="resyncAllRecords()">REENVIAR TODO</button>
+        </div>
       </div>
       <div id="records-list" class="records-list">
         <div class="empty-state">No hay registros aÃºn</div>

@@ -93,6 +93,15 @@
         </button>
       </div>
 
+      <div class="card report-card">
+        <div class="card-label">REPORTE DE ASISTENCIA</div>
+        <div class="report-actions">
+          <button class="btn-secondary" onclick="showRecords()">VER REGISTROS</button>
+          <button class="btn-secondary" onclick="exportAttendanceReport('daily')">REPORTE DIARIO</button>
+          <button class="btn-secondary" onclick="exportAttendanceReport('weekly')">REPORTE SEMANAL</button>
+        </div>
+      </div>
+
       <div id="qr-container" class="card hidden">
         <div class="card-label">QR ACTIVO</div>
         <div class="qr-meta" id="qr-meta"></div>
@@ -167,7 +176,8 @@
         <span id="records-count" class="records-count">0 registros</span>
         <div class="records-actions">
           <button class="btn-sync-now" onclick="syncNow()">âš¡ SINCRONIZAR</button>
-          <button class="btn-sync-now" onclick="resyncAllRecords()">REENVIAR TODO</button>
+          <button class="btn-sync-now" onclick="exportAttendanceReport('daily')">DIARIO</button>
+          <button class="btn-sync-now" onclick="exportAttendanceReport('weekly')">SEMANAL</button>
         </div>
       </div>
       <div id="records-list" class="records-list">

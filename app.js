@@ -154,6 +154,97 @@ async function renderRecords() {
 }
 
 // ── ATTENDANCE REGISTRATION ───────────
+function parseRecordDate(fecha) {
+  if (!fecha) return null;
+  const parts = String(fecha).split('/');
+  if (parts.length !== 3) return null;
+  const day = Number(parts[0]);
+  const month = Number(parts[1]) - 1;
+  const year = Number(parts[2]);
+  const date = new Date(year, month, day);
+  date.setHours(0, 0, 0, 0);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+function formatDateForFile(date) {
+  return date.toISOString().slice(0, 10);
+}
+
+function csvCell(value) {
+  const text = value == null ? '' : String(value);
+  return `"${text.replace(/"/g, '""')}"`;
+}
+
+async function exportAttendanceReport(period = 'daily') {
+  const records = await getAllRecords();
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  let start = new Date(today);
+  let end = new Date(today);
+  let label = 'diario';
+
+  if (period === 'weekly') {
+    const day = today.getDay() || 7;
+    start.setDate(today.getDate() - day + 1);
+    end = new Date(start);
+    end.setDate(start.getDate() + 6);
+    label = 'semanal';
+  }
+
+  const filtered = records.filter(record => {
+    const recordDate = parseRecordDate(record.fecha);
+    return recordDate && recordDate >= start && recordDate <= end;
+  });
+
+  if (filtered.length === 0) {
+    showToast(`No hay registros para el reporte ${label}`, 'warning', 5000);
+    return;
+  }
+
+  const headers = [
+    'Nombre',
+    'Proyecto',
+    'Supervisor',
+    'Tipo',
+    'Fecha',
+    'Hora',
+    'Latitud',
+    'Longitud',
+    'Sincronizado',
+    'Registrado local'
+  ];
+
+  const rows = filtered.map(record => [
+    record.nombre,
+    record.proyecto,
+    record.supervisor,
+    record.tipo,
+    record.fecha,
+    record.hora,
+    record.latitud,
+    record.longitud,
+    record.sincronizado ? 'Si' : 'No',
+    record.timestamp_local || ''
+  ]);
+
+  const csv = [headers, ...rows]
+    .map(row => row.map(csvCell).join(';'))
+    .join('\r\n');
+
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `PyMIB-reporte-${label}-${formatDateForFile(start)}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+
+  showToast(`Reporte ${label} descargado (${filtered.length} registros)`, 'success', 5000);
+}
+
 async function registerAttendance() {
   const nombreEl = document.getElementById('worker-name');
   const nombre   = nombreEl.value.trim();

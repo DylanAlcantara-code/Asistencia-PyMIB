@@ -733,9 +733,20 @@ html, body {
    RECORDS VIEW
 ══════════════════════════════════════ */
 .records-toolbar {
-  display: flex; align-items: center; justify-content: space-between; gap: 12px;
-  flex-wrap: wrap;
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 10px;
   margin-bottom: 16px;
+}
+
+.records-actions,
+.report-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.report-card {
+  margin-top: 18px;
 }
 
 .records-count {
@@ -743,13 +754,6 @@ html, body {
   font-size: 11px;
   color: var(--text-dim);
   letter-spacing: 2px;
-}
-
-.records-actions {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-  justify-content: flex-end;
 }
 
 .btn-sync-now {
@@ -767,6 +771,23 @@ html, body {
 .btn-sync-now:hover {
   background: var(--cyan-dim);
   box-shadow: 0 0 12px rgba(0,200,255,.2);
+}
+
+@media (max-width: 560px) {
+  .records-toolbar {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .records-actions,
+  .report-actions {
+    width: 100%;
+  }
+
+  .records-actions .btn-sync-now,
+  .report-actions .btn-secondary {
+    flex: 1 1 120px;
+  }
 }
 
 .records-list {

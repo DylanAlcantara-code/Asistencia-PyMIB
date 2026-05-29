@@ -18,20 +18,8 @@ let isSyncing      = false;
  * Check if we have internet connectivity
  */
 async function checkOnline() {
-  if (!navigator.onLine) return false;
-  try {
+  return navigator.onLine !== false;
     // Light probe — use a tiny public resource
-    const ctrl = new AbortController();
-    setTimeout(() => ctrl.abort(), 4000);
-    await fetch('https://www.gstatic.com/generate_204', {
-      method: 'HEAD',
-      signal: ctrl.signal,
-      mode: 'no-cors'
-    });
-    return true;
-  } catch {
-    return false;
-  }
 }
 
 /**
@@ -78,6 +66,8 @@ async function syncPendingRecords() {
       await fetch(APPS_SCRIPT_URL, {
         method: 'POST',
         mode: 'no-cors',
+        cache: 'no-store',
+        credentials: 'omit',
         headers: { 'Content-Type': 'text/plain;charset=utf-8' },
         body: JSON.stringify({
           id_local:   record.id,

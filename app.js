@@ -170,9 +170,9 @@ function formatDateForFile(date) {
   return date.toISOString().slice(0, 10);
 }
 
-function csvCell(value) {
+function excelCell(value) {
   const text = value == null ? '' : String(value);
-  return `"${text.replace(/"/g, '""')}"`;
+  return escHtml(text);
 }
 
 async function exportAttendanceReport(period = 'daily') {
@@ -228,15 +228,31 @@ async function exportAttendanceReport(period = 'daily') {
     record.timestamp_local || ''
   ]);
 
-  const csv = [headers, ...rows]
-    .map(row => row.map(csvCell).join(';'))
-    .join('\r\n');
+  const tableRows = [headers, ...rows].map((row, rowIndex) => {
+    const tag = rowIndex === 0 ? 'th' : 'td';
+    return `<tr>${row.map(value => `<${tag}>${excelCell(value)}</${tag}>`).join('')}</tr>`;
+  }).join('');
 
-  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+  const excelHtml = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <style>
+    table { border-collapse: collapse; font-family: Arial, sans-serif; font-size: 12px; }
+    th { background: #1e7fd4; color: #ffffff; font-weight: bold; }
+    th, td { border: 1px solid #b7c6d9; padding: 6px 10px; white-space: nowrap; }
+  </style>
+</head>
+<body>
+  <table>${tableRows}</table>
+</body>
+</html>`;
+
+  const blob = new Blob([excelHtml], { type: 'application/vnd.ms-excel;charset=utf-8' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `PyMIB-reporte-${label}-${formatDateForFile(start)}.csv`;
+  a.download = `PyMIB-reporte-${label}-${formatDateForFile(start)}.xls`;
   document.body.appendChild(a);
   a.click();
   a.remove();

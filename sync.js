@@ -1,46 +1,74 @@
-// ═══════════════════════════════════════
-//  sync.js — Google Sheets synchronization
-//  PyMIB Attendance System
-// ═══════════════════════════════════════
+// sync.js - Google Sheets synchronization
+// PyMIB Attendance System
 
-/**
- * ⚙️  REPLACE THIS URL with your deployed Google Apps Script Web App URL
- *    After deploying apps-script.gs, paste the URL here:
- */
-const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbx4SJ-b_hGhTLwjUnwubSnleFcRAr4Rmnyj5osqe1R2SaOxuSdxlgWvj9nXIaLbhlPy/exec';
-
-const SYNC_INTERVAL_MS = 30_000; // 30 seconds
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwcl4d91PItkGyScTALgvZcxLsJBNNA_vi7-exJJuDXekaClokJWnf5-iHlQZtwuY1O/exec';
+const SYNC_INTERVAL_MS = 30_000;
 
 let syncIntervalId = null;
-let isSyncing      = false;
+let isSyncing = false;
 
-/**
- * Check if we have internet connectivity
- */
 async function checkOnline() {
   return navigator.onLine !== false;
-    // Light probe — use a tiny public resource
 }
 
-/**
- * Update the UI sync indicator
- */
 function updateSyncUI(state) {
-  const dot   = document.getElementById('sync-indicator');
+  const dot = document.getElementById('sync-indicator');
   const label = document.getElementById('sync-label');
   if (!dot || !label) return;
 
-  dot.className   = `sync-dot ${state}`;
+  dot.className = `sync-dot ${state}`;
   label.textContent = {
-    online:  'EN LÍNEA',
+    online: 'EN LINEA',
     offline: 'OFFLINE',
     syncing: 'SYNC...'
   }[state] || 'OFFLINE';
 }
 
-/**
- * Sync all pending records to Google Sheets
- */
+function buildAppsScriptGetUrl(payload) {
+  const params = new URLSearchParams();
+  params.set('action', 'append');
+  Object.entries(payload).forEach(([key, value]) => {
+    params.set(key, value == null ? '' : String(value));
+  });
+  params.set('_ts', Date.now().toString());
+  return `${APPS_SCRIPT_URL}?${params.toString()}`;
+}
+
+function sendJsonp(url) {
+  return new Promise((resolve, reject) => {
+    const callbackName = `pymibSync_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+    const separator = url.includes('?') ? '&' : '?';
+    const script = document.createElement('script');
+    let finished = false;
+
+    const cleanup = () => {
+      delete window[callbackName];
+      script.remove();
+    };
+
+    const finish = (result) => {
+      if (finished) return;
+      finished = true;
+      cleanup();
+      if (result && result.ok) {
+        resolve(result);
+      } else {
+        reject(new Error((result && result.error) || 'Apps Script no confirmo el guardado'));
+      }
+    };
+
+    window[callbackName] = finish;
+    script.onerror = () => finish({ ok: false, error: 'No se pudo conectar con Apps Script' });
+    script.src = `${url}${separator}callback=${encodeURIComponent(callbackName)}`;
+    document.body.appendChild(script);
+    setTimeout(() => finish({ ok: false, error: 'Tiempo agotado al enviar al Sheet' }), 10000);
+  });
+}
+
+function sendRecordToSheet(payload) {
+  return sendJsonp(buildAppsScriptGetUrl(payload));
+}
+
 async function syncPendingRecords() {
   if (isSyncing) return;
 
@@ -48,10 +76,7 @@ async function syncPendingRecords() {
   updateSyncUI(online ? 'online' : 'offline');
 
   if (!online) return;
-  if (APPS_SCRIPT_URL.includes('YOUR_SCRIPT_ID')) {
-    // Script not configured yet — skip silently
-    return;
-  }
+  if (APPS_SCRIPT_URL.includes('YOUR_SCRIPT_ID')) return;
 
   const pending = await getPendingRecords();
   if (pending.length === 0) return;
@@ -63,23 +88,16 @@ async function syncPendingRecords() {
   let synced = 0;
   for (const record of pending) {
     try {
-      await fetch(APPS_SCRIPT_URL, {
-        method: 'POST',
-        mode: 'no-cors',
-        cache: 'no-store',
-        credentials: 'omit',
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify({
-          id_local:   record.id,
-          nombre:     record.nombre,
-          supervisor: record.supervisor,
-          proyecto:   record.proyecto,
-          tipo:       record.tipo,
-          fecha:      record.fecha,
-          hora:       record.hora,
-          latitud:    record.latitud,
-          longitud:   record.longitud
-        })
+      await sendRecordToSheet({
+        id_local: record.id,
+        nombre: record.nombre,
+        supervisor: record.supervisor,
+        proyecto: record.proyecto,
+        tipo: record.tipo,
+        fecha: record.fecha,
+        hora: record.hora,
+        latitud: record.latitud,
+        longitud: record.longitud
       });
 
       await markAsSynced(record.id);
@@ -93,34 +111,25 @@ async function syncPendingRecords() {
   updateSyncUI('online');
 
   if (synced > 0) {
-    showToast(`✓ ${synced} registro(s) sincronizado(s)`, 'success');
-    console.log(`[PyMIB Sync] ${synced} registros sincronizados ✓`);
+    showToast(`${synced} registro(s) enviados a Google Sheet`, 'success');
+    console.log(`[PyMIB Sync] ${synced} registros enviados`);
   }
 }
 
-/**
- * Manual sync trigger (called by button)
- */
 async function syncNow() {
   await syncPendingRecords();
-  // Refresh records view if open
-  if (!document.getElementById('records-view').classList.contains('hidden')) {
+  const recordsView = document.getElementById('records-view');
+  if (recordsView && !recordsView.classList.contains('hidden')) {
     await renderRecords();
   }
 }
 
-/**
- * Start the background sync loop
- */
 function startSyncLoop() {
   if (syncIntervalId) clearInterval(syncIntervalId);
   syncIntervalId = setInterval(syncPendingRecords, SYNC_INTERVAL_MS);
-
-  // Run once immediately
   syncPendingRecords();
 
-  // Also react to browser online/offline events
-  window.addEventListener('online',  () => {
+  window.addEventListener('online', () => {
     updateSyncUI('online');
     syncPendingRecords();
   });

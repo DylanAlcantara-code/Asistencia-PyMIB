@@ -69,6 +69,20 @@ function sendRecordToSheet(payload) {
   return sendJsonp(buildAppsScriptGetUrl(payload));
 }
 
+function buildSheetPayload(record) {
+  return {
+    id_local: record.id,
+    nombre: record.nombre,
+    supervisor: record.supervisor,
+    proyecto: record.proyecto,
+    tipo: record.tipo,
+    fecha: record.fecha,
+    hora: record.hora,
+    latitud: record.latitud,
+    longitud: record.longitud
+  };
+}
+
 async function syncPendingRecords() {
   if (isSyncing) return;
 
@@ -88,17 +102,7 @@ async function syncPendingRecords() {
   let synced = 0;
   for (const record of pending) {
     try {
-      await sendRecordToSheet({
-        id_local: record.id,
-        nombre: record.nombre,
-        supervisor: record.supervisor,
-        proyecto: record.proyecto,
-        tipo: record.tipo,
-        fecha: record.fecha,
-        hora: record.hora,
-        latitud: record.latitud,
-        longitud: record.longitud
-      });
+      await sendRecordToSheet(buildSheetPayload(record));
 
       await markAsSynced(record.id);
       synced++;
@@ -116,8 +120,52 @@ async function syncPendingRecords() {
   }
 }
 
+async function resendAllRecordsToSheet() {
+  if (isSyncing) return;
+
+  const online = await checkOnline();
+  updateSyncUI(online ? 'online' : 'offline');
+
+  if (!online) {
+    showToast('Sin internet para reenviar registros', 'warning', 5000);
+    return;
+  }
+
+  const allRecords = await getAllRecords();
+  if (allRecords.length === 0) {
+    showToast('No hay registros locales para reenviar', 'warning', 5000);
+    return;
+  }
+
+  isSyncing = true;
+  updateSyncUI('syncing');
+
+  let sent = 0;
+  for (const record of allRecords.slice().reverse()) {
+    try {
+      await sendRecordToSheet(buildSheetPayload(record));
+      await markAsSynced(record.id);
+      sent++;
+    } catch (err) {
+      console.warn(`[PyMIB Sync] Error al reenviar id=${record.id}:`, err);
+    }
+  }
+
+  isSyncing = false;
+  updateSyncUI('online');
+  showToast(`${sent} registro(s) reenviados al Sheet`, sent > 0 ? 'success' : 'error', 6000);
+}
+
 async function syncNow() {
   await syncPendingRecords();
+  const recordsView = document.getElementById('records-view');
+  if (recordsView && !recordsView.classList.contains('hidden')) {
+    await renderRecords();
+  }
+}
+
+async function resendAllNow() {
+  await resendAllRecordsToSheet();
   const recordsView = document.getElementById('records-view');
   if (recordsView && !recordsView.classList.contains('hidden')) {
     await renderRecords();

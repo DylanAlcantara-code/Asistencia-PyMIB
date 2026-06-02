@@ -42,6 +42,7 @@ function generateQR() {
   };
 
   const payload = buildWorkerQRUrl(qrData);
+  updateWorkerDirectLink(payload);
 
   // Show container
   document.getElementById('qr-container').classList.remove('hidden');
@@ -135,6 +136,30 @@ function startQRTimer() {
 
   tick();
   qrTimerInterval = setInterval(tick, 1000);
+}
+
+function updateWorkerDirectLink(url) {
+  const link = document.getElementById('worker-direct-link');
+  if (!link) return;
+  link.href = url;
+  link.dataset.url = url;
+}
+
+async function copyWorkerLink() {
+  const link = document.getElementById('worker-direct-link');
+  const url = link && link.dataset.url;
+
+  if (!url || url === '#') {
+    showToast('Primero genera un QR', 'warning', 4000);
+    return;
+  }
+
+  try {
+    await navigator.clipboard.writeText(url);
+    showToast('Link del trabajador copiado', 'success', 4000);
+  } catch {
+    window.prompt('Copia este link del trabajador:', url);
+  }
 }
 
 function validateQRPayload(raw) {

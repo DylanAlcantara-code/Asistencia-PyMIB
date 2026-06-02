@@ -749,6 +749,20 @@ html, body {
   margin-top: 18px;
 }
 
+.qr-link-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: center;
+  margin: 14px 0 8px;
+}
+
+.qr-link-actions .btn-secondary {
+  flex: 1 1 190px;
+  text-align: center;
+  text-decoration: none;
+}
+
 .records-count {
   font-family: var(--font-mono);
   font-size: 11px;
@@ -771,6 +785,16 @@ html, body {
 .btn-sync-now:hover {
   background: var(--cyan-dim);
   box-shadow: 0 0 12px rgba(0,200,255,.2);
+}
+
+.btn-sync-now.danger {
+  border-color: var(--orange);
+  color: var(--orange);
+}
+
+.btn-sync-now.danger:hover {
+  background: var(--orange-dim);
+  box-shadow: 0 0 12px rgba(255,166,0,.2);
 }
 
 @media (max-width: 560px) {

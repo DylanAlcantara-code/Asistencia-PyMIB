@@ -109,6 +109,10 @@
           <div id="qr-canvas-wrap"></div>
           <div class="qr-frame"></div>
         </div>
+        <div class="qr-link-actions">
+          <a id="worker-direct-link" class="btn-secondary" href="#" target="_blank" rel="noopener">ABRIR LINK TRABAJADOR</a>
+          <button class="btn-secondary" onclick="copyWorkerLink()">COPIAR LINK</button>
+        </div>
         <div class="qr-timer-wrap">
           <div class="timer-label">EXPIRA EN</div>
           <div id="qr-timer" class="qr-timer">5:00</div>
@@ -176,6 +180,7 @@
         <span id="records-count" class="records-count">0 registros</span>
         <div class="records-actions">
           <button class="btn-sync-now" onclick="syncNow()">âš¡ SINCRONIZAR</button>
+          <button class="btn-sync-now danger" onclick="resendAllNow()">REENVIAR TODO</button>
           <button class="btn-sync-now" onclick="exportAttendanceReport('daily')">DIARIO</button>
           <button class="btn-sync-now" onclick="exportAttendanceReport('weekly')">SEMANAL</button>
         </div>

@@ -172,7 +172,12 @@ function formatDateForFile(date) {
 
 function excelCell(value) {
   const text = value == null ? '' : String(value);
-  return escHtml(text);
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&apos;');
 }
 
 async function exportAttendanceReport(period = 'daily') {
@@ -228,27 +233,22 @@ async function exportAttendanceReport(period = 'daily') {
     record.timestamp_local || ''
   ]);
 
-  const tableRows = [headers, ...rows].map((row, rowIndex) => {
-    const tag = rowIndex === 0 ? 'th' : 'td';
-    return `<tr>${row.map(value => `<${tag}>${excelCell(value)}</${tag}>`).join('')}</tr>`;
-  }).join('');
+  const tableRows = [headers, ...rows].map(row =>
+    `<Row>${row.map(value => `<Cell><Data ss:Type="String">${excelCell(value)}</Data></Cell>`).join('')}</Row>`
+  ).join('');
 
-  const excelHtml = `<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="UTF-8">
-  <style>
-    table { border-collapse: collapse; font-family: Arial, sans-serif; font-size: 12px; }
-    th { background: #1e7fd4; color: #ffffff; font-weight: bold; }
-    th, td { border: 1px solid #b7c6d9; padding: 6px 10px; white-space: nowrap; }
-  </style>
-</head>
-<body>
-  <table>${tableRows}</table>
-</body>
-</html>`;
+  const excelXml = `<?xml version="1.0" encoding="UTF-8"?>
+<?mso-application progid="Excel.Sheet"?>
+<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"
+  xmlns:o="urn:schemas-microsoft-com:office:office"
+  xmlns:x="urn:schemas-microsoft-com:office:excel"
+  xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">
+  <Worksheet ss:Name="Asistencias">
+    <Table>${tableRows}</Table>
+  </Worksheet>
+</Workbook>`;
 
-  const blob = new Blob([excelHtml], { type: 'application/vnd.ms-excel;charset=utf-8' });
+  const blob = new Blob([excelXml], { type: 'application/vnd.ms-excel;charset=utf-8' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
@@ -320,14 +320,23 @@ async function registerAttendance() {
   };
 
   try {
-    await saveRecord(record);
+    const localId = await saveRecord(record);
+    record.id = localId;
     console.log('[PyMIB] Registro guardado:', record);
 
-    // Show confirmation
-    showConfirmation(record);
+    try {
+      btn.textContent = 'ENVIANDO AL SHEET...';
+      await sendRecordToSheet(buildSheetPayload(record));
+      await markAsSynced(localId);
+      record.sincronizado = true;
+      showToast('Registro enviado a Google Sheet', 'success', 5000);
+    } catch (syncErr) {
+      console.warn('[PyMIB Sync] No se pudo enviar de inmediato:', syncErr);
+      showToast('Guardado en el telefono. Se enviara al Sheet cuando haya conexion.', 'warning', 6000);
+      setTimeout(() => syncPendingRecords(), 1000);
+    }
 
-    // Trigger sync attempt
-    setTimeout(() => syncPendingRecords(), 1000);
+    showConfirmation(record);
 
   } catch (dbErr) {
     console.error('[PyMIB] Error al guardar:', dbErr);

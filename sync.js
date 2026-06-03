@@ -1,8 +1,9 @@
 // sync.js - Google Sheets synchronization
 // PyMIB Attendance System
 
-const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwcl4d91PItkGyScTALgvZcxLsJBNNA_vi7-exJJuDXekaClokJWnf5-iHlQZtwuY1O/exec';
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbysrbmCLUp0AG76Mh_QP2fHZ-HpQNrI60c5ewfynawJ3FqkyooorqusarKjU5nqnDVE/exec';
 const SYNC_INTERVAL_MS = 30_000;
+const SUPERVISOR_SESSION_KEY = 'pymib_supervisor_token';
 
 let syncIntervalId = null;
 let isSyncing = false;
@@ -30,6 +31,23 @@ function buildAppsScriptGetUrl(payload) {
   Object.entries(payload).forEach(([key, value]) => {
     params.set(key, value == null ? '' : String(value));
   });
+  params.set('_ts', Date.now().toString());
+  return `${APPS_SCRIPT_URL}?${params.toString()}`;
+}
+
+function buildAppsScriptListUrl(limit = 200) {
+  const params = new URLSearchParams();
+  params.set('action', 'list');
+  params.set('limit', String(limit));
+  params.set('token', getSupervisorToken());
+  params.set('_ts', Date.now().toString());
+  return `${APPS_SCRIPT_URL}?${params.toString()}`;
+}
+
+function buildAppsScriptLoginUrl(password) {
+  const params = new URLSearchParams();
+  params.set('action', 'login');
+  params.set('password', password);
   params.set('_ts', Date.now().toString());
   return `${APPS_SCRIPT_URL}?${params.toString()}`;
 }
@@ -67,6 +85,31 @@ function sendJsonp(url) {
 
 function sendRecordToSheet(payload) {
   return sendJsonp(buildAppsScriptGetUrl(payload));
+}
+
+async function fetchSheetRecords(limit = 200) {
+  const result = await sendJsonp(buildAppsScriptListUrl(limit));
+  return Array.isArray(result.records) ? result.records : [];
+}
+
+function getSupervisorToken() {
+  return localStorage.getItem(SUPERVISOR_SESSION_KEY) || sessionStorage.getItem(SUPERVISOR_SESSION_KEY) || '';
+}
+
+function isSupervisorLoggedIn() {
+  return Boolean(getSupervisorToken());
+}
+
+async function supervisorLogin(password, remember = true) {
+  const result = await sendJsonp(buildAppsScriptLoginUrl(password));
+  const storage = remember ? localStorage : sessionStorage;
+  storage.setItem(SUPERVISOR_SESSION_KEY, result.token);
+  return result;
+}
+
+function supervisorLogout() {
+  localStorage.removeItem(SUPERVISOR_SESSION_KEY);
+  sessionStorage.removeItem(SUPERVISOR_SESSION_KEY);
 }
 
 function buildSheetPayload(record) {

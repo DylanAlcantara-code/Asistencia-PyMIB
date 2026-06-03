@@ -5,6 +5,7 @@
 
 let currentView = 'home';
 const SUPERVISOR_ACCESS_KEY = 'pymib-supervisor';
+const DEFAULT_SUPERVISOR_NAME = 'Gustavo Chavez';
 
 // ── INIT ──────────────────────────────
 window.addEventListener('DOMContentLoaded', async () => {
@@ -76,6 +77,7 @@ function selectRole(role, options = {}) {
   if (role === 'supervisor') {
     document.getElementById('supervisor-view').classList.remove('hidden');
     currentView = 'supervisor';
+    renderSupervisorAuthState();
     setTimeout(() => showInstallBanner(), 800);
   } else if (role === 'worker') {
     document.getElementById('worker-view').classList.remove('hidden');
@@ -85,6 +87,83 @@ function selectRole(role, options = {}) {
   }
 
   document.getElementById('role-selector').classList.add('hidden');
+}
+
+function ensureSupervisorAuthCards() {
+  const view = document.getElementById('supervisor-view');
+  const header = view.querySelector('.view-header');
+
+  if (!document.getElementById('supervisor-login-card')) {
+    const login = document.createElement('div');
+    login.id = 'supervisor-login-card';
+    login.className = 'card supervisor-auth-card';
+    login.innerHTML = `
+      <div class="card-label">INICIAR SESION SUPERVISOR</div>
+      <div class="form-group">
+        <label class="field-label">PASSWORD</label>
+        <input type="password" id="supervisor-password" class="field-input" autocomplete="current-password" />
+      </div>
+      <button class="btn-primary" onclick="handleSupervisorLogin()">ENTRAR</button>
+    `;
+    header.insertAdjacentElement('afterend', login);
+  }
+
+  if (!document.getElementById('supervisor-session-card')) {
+    const session = document.createElement('div');
+    session.id = 'supervisor-session-card';
+    session.className = 'card supervisor-session-card hidden';
+    session.innerHTML = `
+      <div class="card-label">SESION SUPERVISOR ACTIVA</div>
+      <div class="report-actions">
+        <button class="btn-secondary" onclick="showSheetRecords()">VER REGISTROS SHEET</button>
+        <button class="btn-secondary" onclick="handleSupervisorLogout()">CERRAR SESION</button>
+      </div>
+    `;
+    header.insertAdjacentElement('afterend', session);
+  }
+}
+
+function renderSupervisorAuthState() {
+  ensureSupervisorAuthCards();
+  const loggedIn = isSupervisorLoggedIn();
+  document.getElementById('supervisor-view').classList.toggle('supervisor-locked', !loggedIn);
+  document.getElementById('supervisor-login-card').classList.toggle('hidden', loggedIn);
+  document.getElementById('supervisor-session-card').classList.toggle('hidden', !loggedIn);
+  applySupervisorDefaults();
+}
+
+function applySupervisorDefaults() {
+  const supervisorInput = document.getElementById('sup-name');
+  if (!supervisorInput) return;
+  supervisorInput.value = DEFAULT_SUPERVISOR_NAME;
+  supervisorInput.readOnly = true;
+}
+
+async function handleSupervisorLogin() {
+  const input = document.getElementById('supervisor-password');
+  const password = input.value.trim();
+
+  if (!password) {
+    showToast('Ingresa el password de supervisor', 'warning', 4000);
+    input.focus();
+    return;
+  }
+
+  try {
+    await supervisorLogin(password, true);
+    input.value = '';
+    renderSupervisorAuthState();
+    showToast('Sesion de supervisor iniciada', 'success', 5000);
+  } catch (err) {
+    console.warn('[PyMIB Supervisor] Login fallido:', err);
+    showToast('Password de supervisor incorrecto', 'error', 5000);
+  }
+}
+
+function handleSupervisorLogout() {
+  supervisorLogout();
+  renderSupervisorAuthState();
+  showToast('Sesion cerrada', 'info', 4000);
 }
 
 function goBack() {
@@ -110,6 +189,7 @@ function hideAllViews() {
 
 // ── SHOW RECORDS ──────────────────────
 async function showRecords() {
+  hideInstallBanner();
   hideAllViews();
   document.getElementById('role-selector').classList.add('hidden');
   document.getElementById('records-view').classList.remove('hidden');
@@ -154,6 +234,67 @@ async function renderRecords() {
 }
 
 // ── ATTENDANCE REGISTRATION ───────────
+async function showSheetRecords() {
+  hideInstallBanner();
+
+  if (!isSupervisorLoggedIn()) {
+    selectRole('supervisor');
+    showToast('Inicia sesion de supervisor para ver el Sheet', 'warning', 5000);
+    return;
+  }
+
+  hideAllViews();
+  document.getElementById('role-selector').classList.add('hidden');
+  document.getElementById('records-view').classList.remove('hidden');
+  currentView = 'records';
+
+  const list = document.getElementById('records-list');
+  const countEl = document.getElementById('records-count');
+  countEl.textContent = 'Cargando Google Sheet...';
+  list.innerHTML = '<div class="empty-state">Cargando registros del Sheet</div>';
+
+  try {
+    const records = await fetchSheetRecords(300);
+    renderSheetRecords(records);
+  } catch (err) {
+    console.warn('[PyMIB Sheet] No se pudieron cargar registros:', err);
+    countEl.textContent = 'Error al cargar Sheet';
+    list.innerHTML = '<div class="empty-state">No se pudo cargar Google Sheet</div>';
+    showToast('No se pudieron cargar registros del Sheet', 'error', 6000);
+  }
+}
+
+function renderSheetRecords(records) {
+  const list = document.getElementById('records-list');
+  const countEl = document.getElementById('records-count');
+  countEl.textContent = `${records.length} registro${records.length !== 1 ? 's' : ''} en Sheet`;
+
+  if (records.length === 0) {
+    list.innerHTML = '<div class="empty-state">Sin registros en Google Sheet</div>';
+    return;
+  }
+
+  list.innerHTML = records.map(r => {
+    const typeClass = r.tipo === 'Salida' ? 'exit' : 'entry';
+    const coords = (r.latitud && r.longitud) ? `${r.latitud}, ${r.longitud}` : 'No disponible';
+
+    return `
+      <div class="record-item ${typeClass}">
+        <div class="record-header">
+          <span class="record-name">${escHtml(r.nombre)}</span>
+          <span class="record-badge ${typeClass}">${escHtml(String(r.tipo || '').toUpperCase())}</span>
+        </div>
+        <div class="record-meta">
+          ${escHtml(r.proyecto)} · ${escHtml(r.supervisor)}<br>
+          ${escHtml(r.fecha)} · ${escHtml(r.hora)}<br>
+          GPS ${escHtml(coords)}<br>
+          Registrado: ${escHtml(r.registrado)}
+        </div>
+        <div class="record-sync synced">GOOGLE SHEET</div>
+      </div>`;
+  }).join('');
+}
+
 function parseRecordDate(fecha) {
   if (!fecha) return null;
   const parts = String(fecha).split('/');
@@ -396,6 +537,10 @@ function showConfirmation(record) {
       <span class="key">GPS</span>
       <span class="val">${coords}</span>
     </div>
+    <div class="row">
+      <span class="key">SHEET</span>
+      <span class="val ${record.sincronizado ? 'entry' : 'exit'}">${record.sincronizado ? 'ENVIADO' : 'PENDIENTE'}</span>
+    </div>
   `;
 
   showToast(`✓ ${record.tipo} registrada correctamente`, 'success');
@@ -475,6 +620,11 @@ function showInstallBanner() {
       <button class="pwa-dismiss-btn" onclick="dismissBanner()">✕</button>
     </div>`;
   document.body.appendChild(banner);
+}
+
+function hideInstallBanner() {
+  const banner = document.getElementById('pwa-banner');
+  if (banner) banner.remove();
 }
 
 async function installPWA() {

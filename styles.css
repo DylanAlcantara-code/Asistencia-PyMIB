@@ -749,6 +749,22 @@ html, body {
   margin-top: 18px;
 }
 
+.supervisor-locked > .card:not(#supervisor-login-card):not(#supervisor-session-card),
+.supervisor-locked > #qr-container {
+  display: none;
+}
+
+.supervisor-auth-card,
+.supervisor-session-card {
+  margin-bottom: 18px;
+}
+
+.field-input[readonly] {
+  color: var(--cyan);
+  background: rgba(0, 200, 255, .06);
+  border-color: rgba(0, 200, 255, .35);
+}
+
 .qr-link-actions {
   display: flex;
   flex-wrap: wrap;

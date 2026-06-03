@@ -834,6 +834,26 @@ html, body {
   display: flex; flex-direction: column; gap: 10px;
 }
 
+.sheet-day-group {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.sheet-day-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: rgba(0, 200, 255, .06);
+  color: var(--cyan);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 2px;
+  padding: 10px 14px;
+}
+
 .record-item {
   background: var(--dark2);
   border: 1px solid var(--border);

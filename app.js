@@ -4,6 +4,8 @@
 // ═══════════════════════════════════════
 
 let currentView = 'home';
+let currentRecordsSource = 'local';
+let lastSheetRecords = [];
 const SUPERVISOR_ACCESS_KEY = 'pymib-supervisor';
 const DEFAULT_SUPERVISOR_NAME = 'Gustavo Chavez';
 
@@ -200,8 +202,22 @@ function hideAllViews() {
 }
 
 // ── SHOW RECORDS ──────────────────────
+function setRecordsMode(mode) {
+  currentRecordsSource = mode;
+  const isSheet = mode === 'sheet';
+  ['btn-local-sync', 'btn-local-resend'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.classList.toggle('hidden', isSheet);
+  });
+  ['btn-sheet-refresh', 'btn-sheet-export'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.classList.toggle('hidden', !isSheet);
+  });
+}
+
 async function showRecords() {
   hideInstallBanner();
+  setRecordsMode('local');
   hideAllViews();
   document.getElementById('role-selector').classList.add('hidden');
   document.getElementById('records-view').classList.remove('hidden');
@@ -248,6 +264,7 @@ async function renderRecords() {
 // ── ATTENDANCE REGISTRATION ───────────
 async function showSheetRecords() {
   hideInstallBanner();
+  setRecordsMode('sheet');
 
   if (!isSupervisorLoggedIn()) {
     selectRole('supervisor');
@@ -267,6 +284,7 @@ async function showSheetRecords() {
 
   try {
     const records = await fetchSheetRecords(300);
+    lastSheetRecords = records;
     renderSheetRecords(records);
   } catch (err) {
     console.warn('[PyMIB Sheet] No se pudieron cargar registros:', err);
@@ -286,25 +304,52 @@ function renderSheetRecords(records) {
     return;
   }
 
-  list.innerHTML = records.map(r => {
-    const typeClass = r.tipo === 'Salida' ? 'exit' : 'entry';
-    const coords = (r.latitud && r.longitud) ? `${r.latitud}, ${r.longitud}` : 'No disponible';
+  const grouped = groupSheetRecordsByDay(records);
+  list.innerHTML = Object.entries(grouped).map(([day, dayRecords]) => `
+    <div class="sheet-day-group">
+      <div class="sheet-day-header">
+        <span>${escHtml(day)}</span>
+        <span>${dayRecords.length} registro${dayRecords.length !== 1 ? 's' : ''}</span>
+      </div>
+      ${dayRecords.map(renderSheetRecordItem).join('')}
+    </div>
+  `).join('');
+}
 
-    return `
-      <div class="record-item ${typeClass}">
-        <div class="record-header">
-          <span class="record-name">${escHtml(r.nombre)}</span>
-          <span class="record-badge ${typeClass}">${escHtml(String(r.tipo || '').toUpperCase())}</span>
-        </div>
-        <div class="record-meta">
-          ${escHtml(r.proyecto)} · ${escHtml(r.supervisor)}<br>
-          ${escHtml(r.fecha)} · ${escHtml(r.hora)}<br>
-          GPS ${escHtml(coords)}<br>
-          Registrado: ${escHtml(r.registrado)}
-        </div>
-        <div class="record-sync synced">GOOGLE SHEET</div>
-      </div>`;
-  }).join('');
+function normalizeSheetDay(record) {
+  const raw = String(record.fecha || record.registrado || '').trim();
+  const match = raw.match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+  if (!match) return 'Sin fecha';
+  return `${match[1].padStart(2, '0')}/${match[2].padStart(2, '0')}/${match[3]}`;
+}
+
+function groupSheetRecordsByDay(records) {
+  return records.reduce((groups, record) => {
+    const day = normalizeSheetDay(record);
+    if (!groups[day]) groups[day] = [];
+    groups[day].push(record);
+    return groups;
+  }, {});
+}
+
+function renderSheetRecordItem(r) {
+  const typeClass = r.tipo === 'Salida' ? 'exit' : 'entry';
+  const coords = (r.latitud && r.longitud) ? `${r.latitud}, ${r.longitud}` : 'No disponible';
+
+  return `
+    <div class="record-item ${typeClass}">
+      <div class="record-header">
+        <span class="record-name">${escHtml(r.nombre)}</span>
+        <span class="record-badge ${typeClass}">${escHtml(String(r.tipo || '').toUpperCase())}</span>
+      </div>
+      <div class="record-meta">
+        ${escHtml(r.proyecto)} · ${escHtml(r.supervisor)}<br>
+        ${escHtml(r.fecha)} · ${escHtml(r.hora)}<br>
+        GPS ${escHtml(coords)}<br>
+        Registrado: ${escHtml(r.registrado)}
+      </div>
+      <div class="record-sync synced">GOOGLE SHEET</div>
+    </div>`;
 }
 
 function parseRecordDate(fecha) {
@@ -331,6 +376,83 @@ function excelCell(value) {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&apos;');
+}
+
+function excelSheetName(name) {
+  return String(name || 'Registros')
+    .replace(/[\\/?*[\]:]/g, '-')
+    .slice(0, 31);
+}
+
+function buildExcelWorksheet(name, rows) {
+  const tableRows = rows.map(row =>
+    `<Row>${row.map(value => `<Cell><Data ss:Type="String">${excelCell(value)}</Data></Cell>`).join('')}</Row>`
+  ).join('');
+
+  return `
+  <Worksheet ss:Name="${excelCell(excelSheetName(name))}">
+    <Table>${tableRows}</Table>
+  </Worksheet>`;
+}
+
+function downloadExcelXml(filename, worksheets) {
+  const excelXml = `<?xml version="1.0" encoding="UTF-8"?>
+<?mso-application progid="Excel.Sheet"?>
+<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"
+  xmlns:o="urn:schemas-microsoft-com:office:office"
+  xmlns:x="urn:schemas-microsoft-com:office:excel"
+  xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">${worksheets.join('')}
+</Workbook>`;
+
+  const blob = new Blob([excelXml], { type: 'application/vnd.ms-excel;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
+async function exportSheetReport() {
+  if (!isSupervisorLoggedIn()) {
+    showToast('Inicia sesion de supervisor para descargar el Sheet', 'warning', 5000);
+    return;
+  }
+
+  if (lastSheetRecords.length === 0) {
+    showToast('Cargando registros del Sheet...', 'info', 3000);
+    lastSheetRecords = await fetchSheetRecords(300);
+  }
+
+  if (lastSheetRecords.length === 0) {
+    showToast('No hay registros en el Sheet para descargar', 'warning', 5000);
+    return;
+  }
+
+  const headers = ['Nombre', 'Proyecto', 'Supervisor', 'Tipo', 'Fecha', 'Hora', 'Latitud', 'Longitud', 'Registrado'];
+  const grouped = groupSheetRecordsByDay(lastSheetRecords);
+  const worksheets = Object.entries(grouped).map(([day, records]) => {
+    const rows = [
+      headers,
+      ...records.map(record => [
+        record.nombre,
+        record.proyecto,
+        record.supervisor,
+        record.tipo,
+        record.fecha,
+        record.hora,
+        record.latitud,
+        record.longitud,
+        record.registrado
+      ])
+    ];
+    return buildExcelWorksheet(day, rows);
+  });
+
+  downloadExcelXml(`PyMIB-Sheet-${formatDateForFile(new Date())}.xls`, worksheets);
+  showToast(`Reporte del Sheet descargado (${lastSheetRecords.length} registros)`, 'success', 5000);
 }
 
 async function exportAttendanceReport(period = 'daily') {

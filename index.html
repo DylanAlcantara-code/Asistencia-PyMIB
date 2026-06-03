@@ -96,10 +96,7 @@
       <div class="card report-card">
         <div class="card-label">REPORTE DE ASISTENCIA</div>
         <div class="report-actions">
-          <button class="btn-secondary" onclick="showRecords()">VER REGISTROS</button>
-          <button class="btn-secondary" onclick="showSheetRecords()">VER SHEET</button>
-          <button class="btn-secondary" onclick="exportAttendanceReport('daily')">REPORTE DIARIO</button>
-          <button class="btn-secondary" onclick="exportAttendanceReport('weekly')">REPORTE SEMANAL</button>
+          <button class="btn-secondary" onclick="showSheetRecords()">VER REGISTROS SHEET</button>
         </div>
       </div>
 
@@ -180,10 +177,10 @@
       <div class="records-toolbar">
         <span id="records-count" class="records-count">0 registros</span>
         <div class="records-actions">
-          <button class="btn-sync-now" onclick="syncNow()">âš¡ SINCRONIZAR</button>
-          <button class="btn-sync-now danger" onclick="resendAllNow()">REENVIAR TODO</button>
-          <button class="btn-sync-now" onclick="exportAttendanceReport('daily')">DIARIO</button>
-          <button class="btn-sync-now" onclick="exportAttendanceReport('weekly')">SEMANAL</button>
+          <button id="btn-local-sync" class="btn-sync-now" onclick="syncNow()">âš¡ SINCRONIZAR</button>
+          <button id="btn-local-resend" class="btn-sync-now danger" onclick="resendAllNow()">REENVIAR TODO</button>
+          <button id="btn-sheet-refresh" class="btn-sync-now hidden" onclick="showSheetRecords()">ACTUALIZAR SHEET</button>
+          <button id="btn-sheet-export" class="btn-sync-now hidden" onclick="exportSheetReport()">DESCARGAR REPORTE</button>
         </div>
       </div>
       <div id="records-list" class="records-list">

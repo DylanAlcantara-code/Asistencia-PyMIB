@@ -3,7 +3,7 @@
 //  PyMIB Attendance System
 // ═══════════════════════════════════════
 
-const CACHE_NAME = 'pymib-attendance-v24';
+const CACHE_NAME = 'pymib-attendance-v25';
 
 // Files to cache for full offline support
 const STATIC_ASSETS = [

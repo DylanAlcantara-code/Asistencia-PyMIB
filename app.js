@@ -166,6 +166,19 @@ function handleSupervisorLogout() {
   showToast('Sesion cerrada', 'info', 4000);
 }
 
+function getRouteRole() {
+  const params = new URLSearchParams(window.location.search);
+  const requestedSupervisor = params.get('supervisor') || params.get('admin');
+  const role = params.get('role');
+  const pageName = (window.location.pathname.split('/').filter(Boolean).pop() || '').toLowerCase();
+
+  if (requestedSupervisor === SUPERVISOR_ACCESS_KEY || role === 'supervisor' || pageName === 'supervisor.html') {
+    return 'supervisor';
+  }
+
+  return 'worker';
+}
+
 function goBack() {
   // Stop scanner if active
   stopScanner();
@@ -177,8 +190,7 @@ function goBack() {
 
   hideAllViews();
   document.getElementById('role-selector').classList.add('hidden');
-  const pageName = window.location.pathname.split('/').pop().toLowerCase();
-  selectRole(pageName === 'supervisor.html' ? 'supervisor' : 'worker');
+  selectRole(getRouteRole());
 }
 
 function hideAllViews() {
